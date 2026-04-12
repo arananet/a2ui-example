@@ -1,14 +1,42 @@
-a2a-sdk[http-server]
-asyncclick
-google-adk
-google-auth
-google-auth-httplib2
-google-auth-oauthlib
-google-cloud-aiplatform
-google-generativeai
-gunicorn
-httpx
-itsdangerous
-pydantic
-python-dotenv
-uvicorn
+# =============================================================================
+# A2UI Unsplash Photo Explorer — Python Dependencies
+# =============================================================================
+# Pinned to the latest stable versions as of 2026-04-12.
+#
+# a2a-sdk: pinned to 0.3.26 (latest stable). Do NOT upgrade to 1.0.0-alpha —
+# it contains breaking AgentCard schema changes. Track migration progress at:
+# https://github.com/a2aproject/A2A/releases
+#
+# To regenerate a full lock file:
+#   pip install pip-tools
+#   pip-compile requirements.txt -o requirements-lock.txt
+# =============================================================================
+
+# --- A2A Protocol SDK ---
+# Pinned: 1.0.0-alpha has breaking AgentCard/Capability changes (not yet stable)
+a2a-sdk[http-server]==0.3.26
+
+# --- Google ADK + AI Platform ---
+google-adk>=1.0.0,<2.0.0
+google-auth>=2.49.0,<3.0.0
+google-auth-httplib2>=0.2.0,<1.0.0
+google-auth-oauthlib>=1.2.0,<2.0.0
+google-cloud-aiplatform>=1.90.0,<2.0.0
+google-generativeai>=0.8.0,<1.0.0
+
+# --- Web Server ---
+uvicorn[standard]>=0.34.0,<1.0.0
+gunicorn>=23.0.0,<24.0.0
+
+# --- HTTP Client ---
+httpx>=0.28.0,<1.0.0
+
+# --- Data Validation ---
+pydantic>=2.11.0,<3.0.0
+
+# --- Configuration ---
+python-dotenv>=1.1.0,<2.0.0
+
+# --- Utilities ---
+asyncclick>=8.1.0,<9.0.0
+itsdangerous>=2.2.0,<3.0.0

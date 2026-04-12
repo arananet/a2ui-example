@@ -5,6 +5,12 @@
 **Author**: Eduardo Arana
 **Last Updated**: 2026-04-12
 
+| Dependency | Pinned Version | Notes |
+|------------|---------------|-------|
+| `a2a-sdk` | `0.3.26` | Latest stable. `1.0.0-alpha` not yet production-ready. |
+| A2A Protocol | `0.3.0` | `protocol_version` declared in AgentCard. |
+| Google ADK | `>=1.0.0,<2.0.0` | Compatible release range. |
+
 ---
 
 ## 1. Purpose
@@ -242,6 +248,16 @@ The `dataModelUpdate.valueStruct` MUST conform to:
 **REQ-API-002 — Unsplash Endpoint**
 - Photo search MUST use: `GET https://api.unsplash.com/search/photos`
 - Authentication MUST use the `Authorization: Client-ID {ACCESS_KEY}` header.
+
+**REQ-API-003 — A2A Protocol Version**
+- The agent MUST declare `protocol_version: "0.3.0"` in its AgentCard.
+- JSON-RPC method names MUST follow A2A v0.3: `message/send` and `message/stream`.
+- `a2a-sdk` MUST be pinned to `0.3.26` in `requirements.txt`.
+- When upgrading to `a2a-sdk>=1.0.0`, the following spec changes apply:
+  - `supportsAuthenticatedExtendedCard` → `supportsExtendedAgentCard` (in `AgentCapabilities`)
+  - OAuth 2.0 implicit/password grants removed; device code + PKCE added
+  - `final` field removed from `TaskStatusUpdateEvent`
+  - `tasks/list` method added (filtering + pagination)
 
 ---
 
