@@ -1,0 +1,15 @@
+# =============================================================================
+# Nixpacks Build Configuration (Railway)
+# =============================================================================
+# Used when Railway's root directory is set to "version-2/".
+# https://nixpacks.com/docs/configuration/file
+# =============================================================================
+
+[phases.setup]
+nixPkgs = ["python311", "gcc"]
+
+[phases.install]
+cmds = ["pip install --upgrade pip", "pip install -r requirements.txt"]
+
+[start]
+cmd = "uvicorn main:app --host 0.0.0.0 --port $PORT"

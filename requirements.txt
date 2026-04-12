@@ -1,0 +1,3 @@
+# Root-level requirements file for Railway/nixpacks auto-detection.
+# All actual dependencies are declared in version-2/requirements.txt.
+-r version-2/requirements.txt

@@ -243,6 +243,83 @@ The agent selects a primary color based on the search topic:
 
 ---
 
+## Deploying to Railway
+
+[Railway](https://railway.app) is the recommended deployment target. The repo includes
+all required configuration files.
+
+### 1. Create a GCP Service Account
+
+Railway cannot use `gcloud auth`. Create a service account key for production:
+
+```bash
+# Create the service account
+gcloud iam service-accounts create a2ui-photo-explorer \
+  --project YOUR_PROJECT_ID \
+  --display-name="A2UI Photo Explorer"
+
+# Grant Vertex AI access
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:a2ui-photo-explorer@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/aiplatform.user"
+
+# Export the key (keep this file secret — never commit it)
+gcloud iam service-accounts keys create sa-key.json \
+  --iam-account=a2ui-photo-explorer@YOUR_PROJECT_ID.iam.gserviceaccount.com
+```
+
+### 2. Deploy to Railway
+
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login and initialise
+railway login
+railway init        # link to a new or existing project
+railway up          # deploy
+```
+
+Or connect via the Railway dashboard → **New Project → Deploy from GitHub repo**.
+
+### 3. Set Environment Variables
+
+In the Railway dashboard go to your service → **Variables** and add:
+
+| Variable | Value |
+|----------|-------|
+| `GOOGLE_CLOUD_PROJECT` | Your GCP project ID |
+| `GOOGLE_CLOUD_LOCATION` | e.g. `us-central1` |
+| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | Full contents of `sa-key.json` (one line) |
+| `UNSPLASH_ACCESS_KEY` | Your Unsplash Access Key |
+| `MODEL` | `gemini-2.5-flash` |
+| `AGENT_URL` | Your Railway public URL (set after first deploy) |
+
+> `PORT` is injected automatically by Railway — do not set it.
+
+### 4. Update AGENT_URL
+
+After the first deploy, Railway assigns a public URL (e.g. `https://yourapp.up.railway.app`).
+Update the `AGENT_URL` variable in Railway to this URL and redeploy.
+
+### 5. Verify
+
+```bash
+curl https://yourapp.up.railway.app/.well-known/agent-card.json
+```
+
+### Deployment File Reference
+
+| File | Purpose |
+|------|---------|
+| `railway.toml` | Railway build/deploy config (repo root) |
+| `Procfile` | Start command when root dir is the repo root |
+| `requirements.txt` | Root-level pip requirements (forwards to `version-2/`) |
+| `version-2/Procfile` | Start command when Railway root dir = `version-2/` |
+| `version-2/nixpacks.toml` | Nixpacks build phases (Python 3.11, pip install) |
+
+---
+
 ## Unsplash Attribution
 
 Per the [Unsplash API Guidelines](https://help.unsplash.com/en/articles/2511245-unsplash-api-guidelines), all photos must attribute the photographer. This agent includes photographer name and profile link in every photo card rendered via A2UI.
