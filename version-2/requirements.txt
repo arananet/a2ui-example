@@ -1,0 +1,14 @@
+a2a-sdk[http-server]
+asyncclick
+google-adk
+google-auth
+google-auth-httplib2
+google-auth-oauthlib
+google-cloud-aiplatform
+google-generativeai
+gunicorn
+httpx
+itsdangerous
+pydantic
+python-dotenv
+uvicorn
