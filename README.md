@@ -424,18 +424,34 @@ Or connect via the Railway dashboard → **New Project → Deploy from GitHub re
 
 ### 3. Set Environment Variables
 
-In the Railway dashboard go to your service → **Variables** and add:
+In the Railway dashboard go to your service → **Variables** and add every row below.
+All values are required unless marked optional.
 
-| Variable | Value |
-|----------|-------|
-| `GOOGLE_CLOUD_PROJECT` | Your GCP project ID |
-| `GOOGLE_CLOUD_LOCATION` | e.g. `us-central1` |
-| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | Full contents of `sa-key.json` (one line) |
-| `UNSPLASH_ACCESS_KEY` | Your Unsplash Access Key |
-| `MODEL` | `gemini-2.5-flash` |
-| `AGENT_URL` | Your Railway public URL (set after first deploy) |
+#### Google Cloud
 
-> `PORT` is injected automatically by Railway — do not set it.
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `GOOGLE_CLOUD_PROJECT` | `your-gcp-project-id` | GCP project with Vertex AI enabled |
+| `GOOGLE_CLOUD_LOCATION` | `us-central1` | Vertex AI region |
+| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | *(full contents of `sa-key.json`)* | Paste the entire JSON as one line — see step 1 |
+| `MODEL` | `gemini-2.5-flash` | Gemini model ID |
+
+#### Agent
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `AGENT_URL` | `https://yourapp.up.railway.app` | Set **after** the first deploy; redeploy once updated |
+
+#### Unsplash API
+All three values are in your Unsplash developer dashboard under **Applications → your app**.
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `UNSPLASH_ACCESS_KEY` | *(Access Key from dashboard)* | Sent as `Authorization: Client-ID <key>` on every request |
+| `UNSPLASH_SECRET_KEY` | *(Secret Key from dashboard)* | Required for OAuth user-level actions; stored for completeness |
+| `UNSPLASH_APP_ID` | *(App ID number from dashboard)* | Numeric identifier; not sent in requests |
+
+> **`PORT`** is injected automatically by Railway — do **not** set it manually.
 
 ### 4. Update AGENT_URL
 

@@ -242,6 +242,13 @@ Your role is to help users discover beautiful, high-quality photography through 
             default_input_modes=["text/plain"],
             default_output_modes=["text/plain", "application/json"],
 
+            # --- Security ---
+            # This agent is publicly accessible; no client authentication is required.
+            # Declaring empty schemes + requirements explicitly satisfies A2A audit checks
+            # that verify the security contract is intentional, not omitted by mistake.
+            security_schemes={},
+            security=[],
+
             # --- Capabilities ---
             capabilities=types.AgentCapabilities(
                 streaming=True,
