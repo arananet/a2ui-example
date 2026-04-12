@@ -4,6 +4,109 @@ An enterprise-grade example of an **Agent-to-User Interface (A2UI)** agent built
 
 ---
 
+## MCP UI vs Agent-to-UI (A2UI)
+
+Two patterns exist for agents that generate user interfaces. They solve different problems
+and operate at different layers of the stack.
+
+### MCP UI (Model Context Protocol)
+
+[MCP](https://modelcontextprotocol.io) is Anthropic's open protocol for connecting AI
+models to **tools, resources, and context**. It is host-centric: the MCP client (e.g.,
+Claude Desktop, an IDE plugin) owns the UI entirely. The agent returns data or text; the
+**host decides how to render it**.
+
+```
+┌────────────────────────────────────────────────────────┐
+│                    MCP Host / Client                   │
+│              (Claude Desktop, IDE plugin)              │
+│                                                        │
+│   ┌──────────────┐      ┌────────────────────────┐     │
+│   │  AI Model    │◄────►│    MCP Server(s)        │     │
+│   │  (Claude)    │      │  (tools / resources)    │     │
+│   └──────┬───────┘      └────────────────────────┘     │
+│          │ text / data                                  │
+│          ▼                                              │
+│   ┌──────────────┐                                      │
+│   │  Host UI     │  ← host decides how to render       │
+│   │  (fixed)     │                                      │
+│   └──────────────┘                                      │
+└────────────────────────────────────────────────────────┘
+```
+
+**Key characteristics:**
+- The host application controls layout, components, and rendering
+- The agent has no say in what the UI looks like
+- Great for tool augmentation inside an existing product (e.g., adding search to an IDE)
+- UI is tied to one host; not portable across clients
+
+---
+
+### A2UI (Agent-to-User Interface)
+
+A2UI is a protocol where the **agent itself defines and sends the UI**. The agent
+constructs a full component tree — cards, grids, images, buttons, lists — and transmits
+it alongside its conversational response. Any A2UI-capable client renders exactly what
+the agent specified, regardless of which AI model or host is in use.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                   A2UI-Capable Client                    │
+│                                                          │
+│   ┌──────────────────────────────────────────────────┐   │
+│   │   Rendered UI   ← drawn from agent's component   │   │
+│   │   (dynamic)       tree + valueStruct data        │   │
+│   └─────────────────────────┬────────────────────────┘   │
+└─────────────────────────────│────────────────────────────┘
+                              │ JSON-RPC (A2A)
+                              ▼
+                    ┌─────────────────┐
+                    │   A2A Agent     │  ← agent sends:
+                    │   (this repo)   │     1. beginRendering
+                    │                 │     2. surfaceUpdate
+                    │   Gemini 2.5    │     3. dataModelUpdate
+                    └─────────────────┘
+```
+
+**Key characteristics:**
+- The agent owns UI layout, component types, theming, and data binding
+- UI is described in a portable JSON schema — any compliant client renders it identically
+- Data and structure are decoupled: `surfaceUpdate` defines the component tree once;
+  `dataModelUpdate` pushes new data without re-sending the component tree
+- Works over the A2A protocol (agent-to-agent transport), making it model-agnostic
+- Enables rich, domain-specific UIs (galleries, dashboards, forms) from pure agent output
+
+---
+
+### Side-by-side comparison
+
+| | **MCP UI** | **A2UI** |
+|--|-----------|---------|
+| **Who owns the UI** | Host / client application | The agent |
+| **UI portability** | Tied to one host | Any A2UI-capable client |
+| **UI definition** | Fixed by the host at build time | Sent dynamically per response |
+| **Data + layout coupling** | N/A (host manages both) | Decoupled via `valueStruct` |
+| **Transport** | MCP (stdio / SSE / HTTP) | A2A (JSON-RPC over HTTP) |
+| **Model dependency** | Anthropic / Claude-specific | Model-agnostic |
+| **Best for** | Augmenting an existing product's UI | Agents that need custom UI output |
+| **Component schema** | None (host defines components) | Full schema: Card, Row, Column, List, Image, Button, … |
+| **Theming** | Host-controlled | Agent-controlled (`primaryColor`, `font`) |
+| **Interactivity** | Via host-defined actions | Via `sendMessage` / `openUrl` button actions |
+
+### When to choose each
+
+- **Use MCP UI** when you are building tools for an existing host that already has a UI
+  (e.g., adding a database query tool to Claude Desktop or a code search tool to a JetBrains plugin).
+
+- **Use A2UI** when the agent itself is the product and needs to render structured,
+  domain-specific UI — such as photo galleries, weather dashboards, search results, or
+  data visualisations — across multiple clients without rebuilding the UI in each one.
+
+This project uses **A2UI** because the photo gallery layout, dynamic theming, and
+pagination controls are agent-domain concerns, not host-application concerns.
+
+---
+
 ## Architecture
 
 ```
