@@ -16,22 +16,22 @@ models to **tools, resources, and context**. It is host-centric: the MCP client 
 Claude Desktop, an IDE plugin) owns the UI entirely. The agent returns data or text; the
 **host decides how to render it**.
 
-```
-┌────────────────────────────────────────────────────────┐
-│                    MCP Host / Client                   │
-│              (Claude Desktop, IDE plugin)              │
-│                                                        │
-│   ┌──────────────┐      ┌────────────────────────┐     │
-│   │  AI Model    │◄────►│    MCP Server(s)        │     │
-│   │  (Claude)    │      │  (tools / resources)    │     │
-│   └──────┬───────┘      └────────────────────────┘     │
-│          │ text / data                                  │
-│          ▼                                              │
-│   ┌──────────────┐                                      │
-│   │  Host UI     │  ← host decides how to render       │
-│   │  (fixed)     │                                      │
-│   └──────────────┘                                      │
-└────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Host["MCP Host / Client (Claude Desktop, IDE plugin)"]
+        direction TB
+        Model["🤖 AI Model\n(Claude)"]
+        HostUI["🖥️ Host UI\n(fixed layout — host decides rendering)"]
+        Model -->|text / data| HostUI
+    end
+
+    MCP["🔧 MCP Server(s)\n(tools / resources)"]
+    Model <-->|"MCP protocol\nstdio / SSE / HTTP"| MCP
+
+    style Host fill:#EFF3FF,stroke:#4A6FA5,stroke-width:2px
+    style HostUI fill:#E8F5E9,stroke:#388E3C
+    style Model fill:#FFF8E1,stroke:#F57F17
+    style MCP fill:#F3E5F5,stroke:#7B1FA2
 ```
 
 **Key characteristics:**
@@ -49,23 +49,20 @@ constructs a full component tree — cards, grids, images, buttons, lists — an
 it alongside its conversational response. Any A2UI-capable client renders exactly what
 the agent specified, regardless of which AI model or host is in use.
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                   A2UI-Capable Client                    │
-│                                                          │
-│   ┌──────────────────────────────────────────────────┐   │
-│   │   Rendered UI   ← drawn from agent's component   │   │
-│   │   (dynamic)       tree + valueStruct data        │   │
-│   └─────────────────────────┬────────────────────────┘   │
-└─────────────────────────────│────────────────────────────┘
-                              │ JSON-RPC (A2A)
-                              ▼
-                    ┌─────────────────┐
-                    │   A2A Agent     │  ← agent sends:
-                    │   (this repo)   │     1. beginRendering
-                    │                 │     2. surfaceUpdate
-                    │   Gemini 2.5    │     3. dataModelUpdate
-                    └─────────────────┘
+```mermaid
+sequenceDiagram
+    participant Client as 🖥️ A2UI Client
+    participant Agent as 🤖 A2A Agent
+    participant Ext as 🔧 External API
+
+    Client->>Agent: message/send (natural language)
+    Agent->>Ext: tool call (e.g. search_photos)
+    Ext-->>Agent: structured data
+    Agent-->>Client: conversational text
+    Agent-->>Client: A2UI ① beginRendering (surfaceId + theme)
+    Agent-->>Client: A2UI ② surfaceUpdate (component tree)
+    Agent-->>Client: A2UI ③ dataModelUpdate (valueStruct)
+    Note over Client: Renders dynamic UI from agent spec
 ```
 
 **Key characteristics:**
@@ -109,40 +106,31 @@ pagination controls are agent-domain concerns, not host-application concerns.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        A2A Client                           │
-│                  (e.g., A2UI-capable UI)                    │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ JSON-RPC over HTTP (A2A Protocol)
-                        ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    A2A Server (FastAPI)                      │
-│                       main.py                               │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │              AdkAgentToA2AExecutor                  │    │
-│  │               agent_executor.py                     │    │
-│  └──────────────────────┬──────────────────────────────┘    │
-│                         │                                    │
-│  ┌──────────────────────▼──────────────────────────────┐    │
-│  │                   GeminiAgent                        │    │
-│  │                 gemini_agent.py                      │    │
-│  │                                                      │    │
-│  │   Tools:  search_photos()  suggest_random_topic()   │    │
-│  └──────────────────────┬──────────────────────────────┘    │
-│                         │                                    │
-│  ┌──────────────────────▼──────────────────────────────┐    │
-│  │              Part Converters                         │    │
-│  │              part_converters.py                      │    │
-│  │   A2A ↔ GenAI type translation + A2UI extraction    │    │
-│  └──────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
-                        │
-                        ▼ HTTPS
-┌─────────────────────────────────────────────────────────────┐
-│                   Unsplash API                              │
-│          https://api.unsplash.com/search/photos             │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    Client["🖥️ A2A Client\n(A2UI-capable UI)"]
+
+    subgraph Server["A2A Server · version-2/main.py"]
+        direction TB
+        Executor["AdkAgentToA2AExecutor\nagent_executor.py"]
+        Agent["GeminiAgent\ngemini_agent.py"]
+        Converters["Part Converters\npart_converters.py\nA2A ↔ GenAI · A2UI extraction"]
+        Executor --> Agent
+        Agent --> Converters
+    end
+
+    Gemini["✨ Gemini 2.5 Flash\n(Vertex AI)"]
+    Unsplash["📷 Unsplash API\napi.unsplash.com"]
+
+    Client -->|"JSON-RPC · message/send"| Server
+    Server -->|"A2UI payload\n(beginRendering · surfaceUpdate · dataModelUpdate)"| Client
+    Agent -->|"search_photos()\nsuggest_random_topic()"| Unsplash
+    Agent <-->|LLM inference| Gemini
+
+    style Server fill:#EFF3FF,stroke:#4A6FA5,stroke-width:2px
+    style Client fill:#E8F5E9,stroke:#388E3C
+    style Gemini fill:#FFF8E1,stroke:#F57F17
+    style Unsplash fill:#F3E5F5,stroke:#7B1FA2
 ```
 
 ### Module Responsibilities
@@ -161,7 +149,7 @@ pagination controls are agent-domain concerns, not host-application concerns.
 ## Tech Stack
 
 - **AI**: [Google ADK](https://google.github.io/adk-docs/) + Gemini 2.5 Flash
-- **Agent Protocol**: [A2A (Agent-to-Agent)](https://google.github.io/A2A/)
+- **Agent Protocol**: [A2A (Agent-to-Agent)](https://a2aproject.github.io/A2A/) v0.3
 - **UI Protocol**: A2UI (Agent-to-User Interface)
 - **Web Framework**: FastAPI / Starlette / Uvicorn
 - **Photos API**: [Unsplash API](https://unsplash.com/documentation)
@@ -318,26 +306,50 @@ grep -r "Client-ID\|UNSPLASH_ACCESS_KEY=" version-2/*.py  # Should return nothin
 
 ---
 
-## A2UI Photo Gallery Layout
+## A2UI Photo Gallery Component Tree
 
-The agent renders search results as a structured A2UI surface:
+The agent constructs this component hierarchy for every photo search response:
 
-```
-┌────────────────────────────────────────────┐
-│  Unsplash Photo Explorer          [Title]  │
-│  "mountain landscape"             [Query]  │
-│  1,500 photos found    Page 1 of 167       │
-├─────────────┬─────────────┬───────────────┤
-│  [Photo 1]  │  [Photo 2]  │  [Photo 3]   │
-│  by Jane S. │  by John D. │  by Alex M.  │
-│  Description│  Description│  Description │
-│  [View ↗]   │  [View ↗]   │  [View ↗]    │
-├─────────────┴─────────────┴───────────────┤
-│  [Photo 4]  │  [Photo 5]  │  [Photo 6]   │
-│  ...        │  ...        │  ...         │
-├─────────────┴─────────────┴───────────────┤
-│         [← Previous]   [Next →]           │
-└────────────────────────────────────────────┘
+```mermaid
+graph TD
+    Root["🃏 Card\nroot"]
+    MainCol["📐 Column\nmainColumn"]
+    Header["📐 Column\nheaderRow"]
+    Title["📝 Text · h1\nUnsplash Photo Explorer"]
+    Query["📝 Text · h3\nsearch query"]
+    Stats["➡️ Row · spaceBetween\nstatsRow"]
+    Total["📝 Text · caption\ntotal results"]
+    Page["📝 Text · caption\npage info"]
+    Grid["📋 List · horizontal wrap\nphotoGrid"]
+    PhotoCard["🃏 Card\nphotoCard × N"]
+    Img["🖼️ Image · cover · smallFeature\nphoto URL from valueStruct"]
+    PhotRow["➡️ Row\nphotographerRow"]
+    PhotName["📝 Text · caption\nphotographerName"]
+    Desc["📝 Text · body\ndescription"]
+    Tags["📝 Text · caption\ntags"]
+    ViewBtn["🔘 Button\nView on Unsplash → openUrl"]
+    Pagination["➡️ Row · center\npaginationRow"]
+    Prev["🔘 Button\n← Previous · sendMessage"]
+    Next["🔘 Button\nNext → · sendMessage"]
+
+    Root --> MainCol
+    MainCol --> Header
+    Header --> Title
+    Header --> Query
+    MainCol --> Stats
+    Stats --> Total
+    Stats --> Page
+    MainCol --> Grid
+    Grid -->|"template + dataBinding\n/photos/results"| PhotoCard
+    PhotoCard --> Img
+    PhotoCard --> PhotRow
+    PhotRow --> PhotName
+    PhotoCard --> Desc
+    PhotoCard --> Tags
+    PhotoCard --> ViewBtn
+    MainCol --> Pagination
+    Pagination --> Prev
+    Pagination --> Next
 ```
 
 ---
