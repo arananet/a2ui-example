@@ -148,17 +148,20 @@ curl http://localhost:8001/.well-known/agent-card.json | python3 -m json.tool
 
 ### Send a photo search request
 
+Uses the A2A v0.3 `message/send` method:
+
 ```bash
 curl -X POST http://localhost:8001/ \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
     "id": "1",
-    "method": "tasks/send",
+    "method": "message/send",
     "params": {
       "message": {
         "role": "user",
-        "parts": [{"text": "Find me photos of misty mountain peaks"}]
+        "parts": [{"kind": "text", "text": "Find me photos of misty mountain peaks"}],
+        "messageId": "msg-001"
       }
     }
   }'
@@ -172,11 +175,33 @@ curl -X POST http://localhost:8001/ \
   -d '{
     "jsonrpc": "2.0",
     "id": "2",
-    "method": "tasks/send",
+    "method": "message/send",
     "params": {
       "message": {
         "role": "user",
-        "parts": [{"text": "Surprise me with something beautiful"}]
+        "parts": [{"kind": "text", "text": "Surprise me with something beautiful"}],
+        "messageId": "msg-002"
+      }
+    }
+  }'
+```
+
+### Stream a response
+
+Uses the A2A v0.3 `message/stream` method:
+
+```bash
+curl -X POST http://localhost:8001/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "3",
+    "method": "message/stream",
+    "params": {
+      "message": {
+        "role": "user",
+        "parts": [{"kind": "text", "text": "Find me urban architecture photos"}],
+        "messageId": "msg-003"
       }
     }
   }'
@@ -305,7 +330,13 @@ Update the `AGENT_URL` variable in Railway to this URL and redeploy.
 ### 5. Verify
 
 ```bash
-curl https://yourapp.up.railway.app/.well-known/agent-card.json
+# Check the agent card (A2A v0.3 manifest)
+curl https://yourapp.up.railway.app/.well-known/agent-card.json | python3 -m json.tool
+
+# Send a test message (A2A v0.3 message/send)
+curl -X POST https://yourapp.up.railway.app/ \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":"1","method":"message/send","params":{"message":{"role":"user","parts":[{"kind":"text","text":"Find photos of mountain lakes"}],"messageId":"test-001"}}}'
 ```
 
 ### Deployment File Reference

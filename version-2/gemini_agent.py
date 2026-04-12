@@ -212,6 +212,7 @@ Your role is to help users discover beautiful, high-quality photography through 
 
         The Agent Card is served at `/.well-known/agent-card.json` and allows
         A2A clients to discover this agent's capabilities, supported modes, and skills.
+        Conforms to A2A protocol v0.3 (a2a-sdk 0.3.x).
 
         Args:
             agent_url: The public URL where this agent is hosted.
@@ -220,13 +221,35 @@ Your role is to help users discover beautiful, high-quality photography through 
             A populated AgentCard object describing the agent's identity and capabilities.
         """
         return types.AgentCard(
+            # --- Identity ---
             name=self.name,
             description=self.description,
             url=agent_url,
             version="1.0.0",
+            protocol_version="0.3.0",
+            preferred_transport="JSONRPC",
+
+            # --- Provider ---
+            provider=types.AgentProvider(
+                organization="Eduardo Arana",
+                url=agent_url,
+            ),
+
+            # --- Documentation ---
+            documentation_url=f"{agent_url}/docs" if not agent_url.startswith("http://127") else None,
+
+            # --- Transport modes (card-level defaults, overridable per skill) ---
             default_input_modes=["text/plain"],
             default_output_modes=["text/plain", "application/json"],
-            capabilities=types.AgentCapabilities(streaming=True),
+
+            # --- Capabilities ---
+            capabilities=types.AgentCapabilities(
+                streaming=True,
+                push_notifications=False,
+                state_transition_history=False,
+            ),
+
+            # --- Skills ---
             skills=[
                 types.AgentSkill(
                     id="photo-search",
@@ -237,6 +260,8 @@ Your role is to help users discover beautiful, high-quality photography through 
                         "pagination, photographer attribution, and dynamic theming."
                     ),
                     tags=["photos", "search", "unsplash", "gallery", "images"],
+                    input_modes=["text/plain"],
+                    output_modes=["text/plain", "application/json"],
                     examples=[
                         "Find me photos of misty Japanese temples",
                         "Show me aerial views of New York City",
@@ -244,6 +269,23 @@ Your role is to help users discover beautiful, high-quality photography through 
                         "Surprise me with something beautiful",
                         "Show me page 2 of ocean sunset photos",
                     ],
-                )
+                ),
+                types.AgentSkill(
+                    id="topic-suggestion",
+                    name="Random Topic Suggestion",
+                    description=(
+                        "Suggests a curated, interesting photo search topic for "
+                        "serendipitous discovery. Use when you want inspiration."
+                    ),
+                    tags=["inspiration", "random", "discover", "suggest"],
+                    input_modes=["text/plain"],
+                    output_modes=["text/plain", "application/json"],
+                    examples=[
+                        "Surprise me",
+                        "Inspire me with something beautiful",
+                        "Give me a random topic",
+                        "I'm feeling adventurous, pick something for me",
+                    ],
+                ),
             ],
         )
