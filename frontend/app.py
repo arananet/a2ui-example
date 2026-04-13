@@ -196,7 +196,7 @@ async def call_agent(user_message: str, session_id: str) -> str:
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request) -> HTMLResponse:
     """Serves the main A2UI Photo Explorer web interface."""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 
 @app.get("/health")
