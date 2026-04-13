@@ -66,12 +66,23 @@ def _extract_a2ui_json(text: str) -> Tuple[str, Optional[str]]:
     Returns:
         A tuple of (conversational_text, ui_json_string).
     """
-    if "---a2ui_JSON---" in text:
-        parts = text.split("---a2ui_JSON---", 1)
-        conversational_text = parts[0].strip()
-        ui_json = parts[1].strip().lstrip("```json").rstrip("```").strip()
-        return conversational_text, ui_json
-    return text, None
+    if "---a2ui_JSON---" not in text:
+        return text, None
+
+    parts = text.split("---a2ui_JSON---", 1)
+    conversational_text = parts[0].strip()
+    ui_json = parts[1].strip()
+
+    # Strip optional markdown code fences (```json ... ``` or ``` ... ```)
+    if ui_json.startswith("```json"):
+        ui_json = ui_json[7:]
+    elif ui_json.startswith("```"):
+        ui_json = ui_json[3:]
+    if ui_json.endswith("```"):
+        ui_json = ui_json[:-3]
+    ui_json = ui_json.strip()
+
+    return conversational_text, ui_json
 
 # --- CONVERTERS ---
 
@@ -147,14 +158,31 @@ def convert_genai_part_to_a2a_parts(
             # Try as raw JSON list/dict (A2UI payload directly)
             try:
                 ui_data = json.loads(ui_json)
-                res_parts = []
-                if text_content:
-                    res_parts.append(a2a_types.Part(root=a2a_types.TextPart(text=text_content)))
-                res_parts.append(a2a_types.Part(root=a2a_types.DataPart(data=ui_data)))
-                return res_parts
             except json.JSONDecodeError:
-                logger.warning("Failed to parse A2UI JSON, returning as plain text.")
-                return [a2a_types.Part(root=a2a_types.TextPart(text=part.text))]
+                # LLM may emit multiple JSON objects (NDJSON) instead of a
+                # wrapped array. Parse them sequentially and collect into a list.
+                try:
+                    objects: list = []
+                    decoder = json.JSONDecoder()
+                    pos = 0
+                    stripped = ui_json.strip()
+                    while pos < len(stripped):
+                        obj, end_pos = decoder.raw_decode(stripped, pos)
+                        objects.append(obj)
+                        pos = end_pos
+                        # skip whitespace between objects
+                        while pos < len(stripped) and stripped[pos] in ' \t\n\r':
+                            pos += 1
+                    ui_data = objects if len(objects) != 1 else objects[0]
+                except (json.JSONDecodeError, ValueError):
+                    logger.warning("Failed to parse A2UI JSON, returning as plain text.")
+                    return [a2a_types.Part(root=a2a_types.TextPart(text=part.text))]
+
+            res_parts = []
+            if text_content:
+                res_parts.append(a2a_types.Part(root=a2a_types.TextPart(text=text_content)))
+            res_parts.append(a2a_types.Part(root=a2a_types.DataPart(data=ui_data)))
+            return res_parts
 
         # Plain text with no A2UI delimiter
         return [a2a_types.Part(root=a2a_types.TextPart(text=part.text))]

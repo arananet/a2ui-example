@@ -69,18 +69,38 @@ def parse_agent_response(raw_text: str) -> dict[str, Any]:
 
     try:
         a2ui_messages = json.loads(raw_json)
-        if not isinstance(a2ui_messages, list):
+    except json.JSONDecodeError as exc:
+        # LLM may emit multiple JSON objects (NDJSON) rather than a wrapped
+        # array. Parse sequentially and collect into a list.
+        try:
+            objects: list = []
+            decoder = json.JSONDecoder()
+            pos = 0
+            stripped = raw_json.strip()
+            while pos < len(stripped):
+                obj, end_pos = decoder.raw_decode(stripped, pos)
+                objects.append(obj)
+                pos = end_pos
+                while pos < len(stripped) and stripped[pos] in " \t\n\r":
+                    pos += 1
+            a2ui_messages = objects
+        except (json.JSONDecodeError, ValueError):
+            logger.error("Failed to parse A2UI JSON: %s", exc)
             return {
                 "message": conversational_text,
                 "a2ui": None,
-                "error": "A2UI payload is not a JSON array.",
+                "error": f"A2UI JSON parse error: {exc}",
             }
-    except json.JSONDecodeError as exc:
-        logger.error("Failed to parse A2UI JSON: %s", exc)
+
+    # Normalise: a single dict means the LLM emitted one object — wrap it
+    if isinstance(a2ui_messages, dict):
+        a2ui_messages = [a2ui_messages]
+
+    if not isinstance(a2ui_messages, list):
         return {
             "message": conversational_text,
             "a2ui": None,
-            "error": f"A2UI JSON parse error: {exc}",
+            "error": "A2UI payload is not a JSON array.",
         }
 
     return {"message": conversational_text, "a2ui": a2ui_messages, "error": None}
@@ -174,19 +194,47 @@ async def call_agent(user_message: str, session_id: str) -> str:
         raise HTTPException(status_code=502, detail=str(data["error"]))
 
     result = data.get("result", {})
-    # A2A message/send result wraps in status.message or artifacts
+
+    # Collect parts from artifacts first, then status.message as fallback
+    parts: list = []
     artifacts = result.get("artifacts", [])
     if artifacts:
         parts = artifacts[0].get("parts", [])
-        text_parts = [p.get("text", "") for p in parts if p.get("kind") == "text"]
-        return "\n".join(text_parts)
+    if not parts:
+        status_obj = result.get("status", {})
+        message_obj = status_obj.get("message", {})
+        parts = message_obj.get("parts", [])
 
-    # Fallback: check status message
-    status = result.get("status", {})
-    message = status.get("message", {})
-    parts = message.get("parts", [])
-    text_parts = [p.get("text", "") for p in parts if p.get("kind") == "text"]
-    return "\n".join(text_parts) if text_parts else "No response received from agent."
+    # Separate text parts from A2UI data parts.
+    # The backend sends A2UI as a DataPart (kind="data") when it parses
+    # successfully; if parsing failed, the full text including the delimiter
+    # arrives as a single TextPart.
+    text_segments: list[str] = []
+    a2ui_messages: list = []
+
+    for part in parts:
+        kind = part.get("kind", "")
+        if kind == "text":
+            text = part.get("text", "")
+            if A2UI_DELIMITER in text:
+                # Backend failed to extract A2UI; pass through as-is so
+                # parse_agent_response can handle it.
+                return text
+            text_segments.append(text)
+        elif kind == "data":
+            raw_data = part.get("data")
+            if isinstance(raw_data, list):
+                a2ui_messages.extend(raw_data)
+            elif isinstance(raw_data, dict):
+                a2ui_messages.append(raw_data)
+
+    text_response = "\n".join(text_segments)
+
+    # Reconstruct the delimiter format so parse_agent_response can handle it
+    if a2ui_messages:
+        text_response += f"\n{A2UI_DELIMITER}\n{json.dumps(a2ui_messages)}"
+
+    return text_response or "No response received from agent."
 
 
 # ---------------------------------------------------------------------------
