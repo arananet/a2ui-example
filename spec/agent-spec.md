@@ -206,7 +206,7 @@ The `dataModelUpdate.valueStruct` MUST conform to:
 - The Unsplash Access Key, Google Cloud credentials, and all sensitive values MUST be
   loaded exclusively from environment variables.
 - No credential value may appear in any committed source file.
-- Verification: `grep -rn "Client-ID [A-Za-z]" version-2/*.py` must return no output.
+- Verification: `grep -rn "Client-ID [A-Za-z]" src/*.py` must return no output.
 
 **REQ-SEC-002 — Environment Template**
 - A `.env.example` file MUST be committed with placeholder values.

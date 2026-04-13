@@ -1,7 +1,7 @@
 # =============================================================================
 # Nixpacks Build Configuration (Railway)
 # =============================================================================
-# Used when Railway's root directory is set to "version-2/".
+# Used when Railway's root directory is set to "src/".
 # https://nixpacks.com/docs/configuration/file
 # =============================================================================
 

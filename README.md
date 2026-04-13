@@ -110,7 +110,7 @@ pagination controls are agent-domain concerns, not host-application concerns.
 graph TB
     Client["🖥️ A2A Client\n(A2UI-capable UI)"]
 
-    subgraph Server["A2A Server · version-2/main.py"]
+    subgraph Server["A2A Server · src/main.py"]
         direction TB
         Executor["AdkAgentToA2AExecutor\nagent_executor.py"]
         Agent["GeminiAgent\ngemini_agent.py"]
@@ -172,7 +172,7 @@ graph TB
 
 ```bash
 git clone https://github.com/arananet/a2ui-example.git
-cd a2ui-example/version-2
+cd a2ui-example/src
 ```
 
 ### 2. Create and activate a virtual environment
@@ -221,7 +221,7 @@ gcloud config set project YOUR_PROJECT_ID
 ## Running the Agent
 
 ```bash
-cd version-2
+cd src
 uvicorn main:app --reload --port 8001
 ```
 
@@ -301,7 +301,7 @@ curl -X POST http://localhost:8001/ \
 ### Verify no secrets are in source
 
 ```bash
-grep -r "Client-ID\|UNSPLASH_ACCESS_KEY=" version-2/*.py  # Should return nothing
+grep -r "Client-ID\|UNSPLASH_ACCESS_KEY=" src/*.py  # Should return nothing
 ```
 
 ---
@@ -476,9 +476,9 @@ curl -X POST https://yourapp.up.railway.app/ \
 |------|---------|
 | `railway.toml` | Railway build/deploy config (repo root) |
 | `Procfile` | Start command when root dir is the repo root |
-| `requirements.txt` | Root-level pip requirements (forwards to `version-2/`) |
-| `version-2/Procfile` | Start command when Railway root dir = `version-2/` |
-| `version-2/nixpacks.toml` | Nixpacks build phases (Python 3.11, pip install) |
+| `requirements.txt` | Root-level pip requirements (forwards to `src/`) |
+| `src/Procfile` | Start command when Railway root dir = `src/` |
+| `src/nixpacks.toml` | Nixpacks build phases (Python 3.11, pip install) |
 
 ---
 

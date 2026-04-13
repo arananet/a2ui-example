@@ -12,7 +12,7 @@ and Gemini 2.5 Flash. It uses the Unsplash API to search photos and renders resu
 dynamic photo gallery via the **A2UI (Agent-to-User Interface)** protocol over
 **A2A (Agent-to-Agent)** transport.
 
-All implementation lives in `version-2/`. The spec that drives this implementation is at
+All implementation lives in `src/`. The spec that drives this implementation is at
 `spec/agent-spec.md`. Always read the spec before making functional changes.
 
 ---
@@ -26,7 +26,7 @@ a2ui-example/
 ├── .gitignore
 ├── spec/
 │   └── agent-spec.md            ← Canonical specification (source of truth)
-└── version-2/
+└── src/
     ├── main.py                  ← ASGI entrypoint
     ├── gemini_agent.py          ← Agent class + Unsplash tool definitions
     ├── prompt_builder.py        ← A2UI UI templates + system prompt builder
@@ -50,7 +50,7 @@ a2ui-example/
 - **NEVER hardcode credentials, API keys, or tokens in any file.**
 - All secrets are loaded via `os.environ.get(...)` with `python-dotenv` for local dev.
 - The only committed secrets-related file is `.env.example` with placeholder values.
-- Always verify: `grep -rn "Client-ID [A-Za-z]\|UNSPLASH.*=" version-2/*.py` returns nothing.
+- Always verify: `grep -rn "Client-ID [A-Za-z]\|UNSPLASH.*=" src/*.py` returns nothing.
 
 ### Code Style
 - Python 3.11+, type hints throughout.
@@ -78,7 +78,7 @@ a2ui-example/
 
 ```bash
 # 1. Set up environment
-cd version-2
+cd src
 cp .env.example .env          # Fill in real credentials
 python3 -m venv .venv
 source .venv/bin/activate
@@ -100,16 +100,16 @@ curl http://localhost:8001/.well-known/agent-card.json
 ## Adding or Modifying Tools
 
 1. Update `spec/agent-spec.md` with the new tool's requirement entry.
-2. Define the tool function in `version-2/gemini_agent.py` with a complete Google-style docstring.
+2. Define the tool function in `src/gemini_agent.py` with a complete Google-style docstring.
 3. Register it in `GeminiAgent.__init__` tools list.
-4. Update the system prompt in `version-2/prompt_builder.py` if UI output changes.
-5. Verify no secrets are introduced: `grep -rn "os.environ.get" version-2/gemini_agent.py`.
+4. Update the system prompt in `src/prompt_builder.py` if UI output changes.
+5. Verify no secrets are introduced: `grep -rn "os.environ.get" src/gemini_agent.py`.
 
 ---
 
 ## Modifying the A2UI Schema
 
-`version-2/a2ui_schema.py` contains the canonical A2UI JSON Schema.
+`src/a2ui_schema.py` contains the canonical A2UI JSON Schema.
 Only modify it if the A2UI protocol spec is updated. Changes here affect all component
 validation and must be accompanied by updates to the template in `prompt_builder.py`.
 
