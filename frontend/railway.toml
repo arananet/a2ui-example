@@ -1,0 +1,16 @@
+# =============================================================================
+# Railway Deployment Configuration — A2UI Frontend
+# =============================================================================
+# https://docs.railway.app/reference/config-as-code
+#
+# Set the Railway service "Root Directory" to "frontend/" for the cleanest
+# build. If deploying from repo root, the startCommand handles the path.
+# =============================================================================
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "cd frontend && uvicorn app:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
