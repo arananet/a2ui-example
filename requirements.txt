@@ -1,3 +1,3 @@
 # Root-level requirements file for Railway/nixpacks auto-detection.
-# All actual dependencies are declared in src/requirements.txt.
--r src/requirements.txt
+# This branch (claude/a2ui-frontend) serves the visual web frontend.
+-r frontend/requirements.txt

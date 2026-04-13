@@ -1,17 +1,23 @@
 # =============================================================================
-# Railway Deployment Configuration
+# Railway Deployment Configuration — A2UI Frontend
 # =============================================================================
 # https://docs.railway.app/reference/config-as-code
 #
-# IMPORTANT: In the Railway dashboard, set the "Root Directory" of your
-# service to "src" for the cleanest build. If you leave the root
-# as the repo root, the startCommand below handles the path change.
+# This branch (claude/a2ui-frontend) deploys the visual web UI.
+# The frontend proxies agent calls to the A2A backend via AGENT_URL.
+#
+# Required Railway service variables:
+#   AGENT_URL — public URL of the deployed backend A2A agent service
+#               e.g. https://your-backend.up.railway.app
+#
+# The backend agent should be deployed from the
+# claude/a2ui-google-sdk-example-wt1d5 branch as a separate Railway service.
 # =============================================================================
 
 [build]
 builder = "nixpacks"
 
 [deploy]
-startCommand = "cd src && uvicorn main:app --host 0.0.0.0 --port $PORT"
+startCommand = "cd frontend && uvicorn app:app --host 0.0.0.0 --port $PORT"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
