@@ -109,6 +109,9 @@ def parse_agent_response(raw_text: str) -> dict[str, Any]:
 def extract_theme(a2ui_messages: list[dict]) -> dict[str, str]:
     """Extracts theme information from the beginRendering A2UI message.
 
+    A2UI messages use the message type as the top-level key:
+    ``{"beginRendering": {"styles": {"primaryColor": "#1565C0", "font": "Inter"}}}``
+
     Args:
         a2ui_messages: Parsed list of A2UI message objects.
 
@@ -117,8 +120,8 @@ def extract_theme(a2ui_messages: list[dict]) -> dict[str, str]:
     """
     defaults = {"primaryColor": "#1565C0", "font": "Inter"}
     for msg in a2ui_messages:
-        if msg.get("type") == "beginRendering":
-            styles = msg.get("styles", {})
+        if "beginRendering" in msg:
+            styles = msg["beginRendering"].get("styles", {})
             return {
                 "primaryColor": styles.get("primaryColor", defaults["primaryColor"]),
                 "font": styles.get("font", defaults["font"]),
@@ -129,6 +132,9 @@ def extract_theme(a2ui_messages: list[dict]) -> dict[str, str]:
 def extract_value_struct(a2ui_messages: list[dict]) -> dict[str, Any]:
     """Extracts the valueStruct data model from the dataModelUpdate A2UI message.
 
+    A2UI messages use the message type as the top-level key:
+    ``{"dataModelUpdate": {"valueStruct": {"photos": {...}}}}``
+
     Args:
         a2ui_messages: Parsed list of A2UI message objects.
 
@@ -136,8 +142,8 @@ def extract_value_struct(a2ui_messages: list[dict]) -> dict[str, Any]:
         The photos data dict, or an empty dict if not found.
     """
     for msg in a2ui_messages:
-        if msg.get("type") == "dataModelUpdate":
-            return msg.get("valueStruct", {}).get("photos", {})
+        if "dataModelUpdate" in msg:
+            return msg["dataModelUpdate"].get("valueStruct", {}).get("photos", {})
     return {}
 
 
