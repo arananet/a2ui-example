@@ -198,8 +198,15 @@ Then edit `.env` with your real credentials:
 
 ```env
 # Google ADK / Gemini
-GOOGLE_CLOUD_PROJECT=your-gcp-project-id
-GOOGLE_CLOUD_LOCATION=us-central1
+# Option A — Google AI Studio (simplest, free tier available)
+# Get your key at: https://aistudio.google.com/app/apikey
+GOOGLE_API_KEY=your-google-api-key-here
+
+# Option B — Vertex AI (production / enterprise)
+# Required only if NOT using GOOGLE_API_KEY
+# GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+# GOOGLE_CLOUD_LOCATION=us-central1
+
 MODEL=gemini-2.5-flash
 AGENT_URL=http://127.0.0.1:8001
 
@@ -427,14 +434,25 @@ Or connect via the Railway dashboard → **New Project → Deploy from GitHub re
 In the Railway dashboard go to your service → **Variables** and add every row below.
 All values are required unless marked optional.
 
-#### Google Cloud
+#### Google Cloud / Gemini
+
+Choose **one** authentication method. Option A is the fastest way to get started.
+
+**Option A — Google AI Studio API Key** *(recommended for getting started)*
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `GOOGLE_API_KEY` | *(your API key)* | Get it free at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
+| `MODEL` | `gemini-2.5-flash` | Gemini model ID (optional, this is the default) |
+
+**Option B — Vertex AI / Service Account** *(production / enterprise)*
 
 | Variable | Value | Notes |
 |----------|-------|-------|
 | `GOOGLE_CLOUD_PROJECT` | `your-gcp-project-id` | GCP project with Vertex AI enabled |
 | `GOOGLE_CLOUD_LOCATION` | `us-central1` | Vertex AI region |
 | `GOOGLE_APPLICATION_CREDENTIALS_JSON` | *(full contents of `sa-key.json`)* | Paste the entire JSON as one line — see step 1 |
-| `MODEL` | `gemini-2.5-flash` | Gemini model ID |
+| `MODEL` | `gemini-2.5-flash` | Gemini model ID (optional, this is the default) |
 
 #### Agent
 
