@@ -222,11 +222,21 @@ async def call_agent(user_message: str, session_id: str) -> str:
                 return text
             text_segments.append(text)
         elif kind == "data":
-            raw_data = part.get("data")
-            if isinstance(raw_data, list):
-                a2ui_messages.extend(raw_data)
-            elif isinstance(raw_data, dict):
+            raw_data = part.get("data", {})
+            # Backend wraps A2UI list as {"a2ui_messages": [...]} because
+            # DataPart.data must be dict, not list.
+            if isinstance(raw_data, dict) and "a2ui_messages" in raw_data:
+                msgs = raw_data["a2ui_messages"]
+                if isinstance(msgs, list):
+                    a2ui_messages.extend(msgs)
+                elif isinstance(msgs, dict):
+                    a2ui_messages.append(msgs)
+            elif isinstance(raw_data, dict) and any(
+                k in raw_data for k in ("beginRendering", "surfaceUpdate", "dataModelUpdate")
+            ):
                 a2ui_messages.append(raw_data)
+            elif isinstance(raw_data, list):
+                a2ui_messages.extend(raw_data)
 
     text_response = "\n".join(text_segments)
 

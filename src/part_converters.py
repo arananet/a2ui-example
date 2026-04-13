@@ -48,10 +48,12 @@ def is_a2ui_part(a2a_part: a2a_types.Part) -> bool:
     if hasattr(a2a_part, 'root') and isinstance(a2a_part.root, a2a_types.DataPart):
         data = a2a_part.root.data
         if isinstance(data, dict):
-            # Check for common A2UI keys
+            # Wrapped list format {"a2ui_messages": [...]}
+            if "a2ui_messages" in data:
+                return True
+            # Direct single-message format {"beginRendering": {...}}
             return any(key in data for key in ["beginRendering", "surfaceUpdate", "dataModelUpdate", "deleteSurface"])
         if isinstance(data, list) and len(data) > 0:
-            # Check first item of a list (A2UI often sends a list of messages)
             first = data[0]
             if isinstance(first, dict):
                 return any(key in first for key in ["beginRendering", "surfaceUpdate", "dataModelUpdate", "deleteSurface"])
@@ -178,10 +180,19 @@ def convert_genai_part_to_a2a_parts(
                     logger.warning("Failed to parse A2UI JSON, returning as plain text.")
                     return [a2a_types.Part(root=a2a_types.TextPart(text=part.text))]
 
+            # DataPart.data must be dict[str, Any] — wrap a list in
+            # {"a2ui_messages": [...]} so Pydantic accepts it.
+            if isinstance(ui_data, list):
+                data_payload: dict = {"a2ui_messages": ui_data}
+            elif isinstance(ui_data, dict):
+                data_payload = ui_data
+            else:
+                data_payload = {"value": str(ui_data)}
+
             res_parts = []
             if text_content:
                 res_parts.append(a2a_types.Part(root=a2a_types.TextPart(text=text_content)))
-            res_parts.append(a2a_types.Part(root=a2a_types.DataPart(data=ui_data)))
+            res_parts.append(a2a_types.Part(root=a2a_types.DataPart(data=data_payload)))
             return res_parts
 
         # Plain text with no A2UI delimiter
